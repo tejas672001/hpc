@@ -1,0 +1,77 @@
+Cuda Add Mul
+#include <iostream>
+#include <cuda_runtime.h>
+
+// CUDA kernel for vector addition
+__global__ void vectorAddition(const int* a, const int* b, int* c, int size) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < size) {
+        c[tid] = a[tid] + b[tid];
+    }
+}
+
+// CUDA kernel for matrix multiplication
+__global__ void matrixMultiplication(const int* a, const int* b, int* c, int m, int n, int p) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < m && col < p) {
+        int sum = 0;
+        for (int k = 0; k < n; ++k) {
+            sum += a[row * n + k] * b[k * p + col];
+        }
+        c[row * p + col] = sum;
+    }
+}
+
+int main() {
+    const int VECTOR_SIZE = 100000;
+    const int MATRIX_SIZE = 1000;
+
+    // Allocate memory for vectors and matrices on the host
+    int* h_a = new int[VECTOR_SIZE];
+    int* h_b = new int[VECTOR_SIZE];
+    int* h_c = new int[VECTOR_SIZE];
+
+    int* h_matrixA = new int[MATRIX_SIZE * MATRIX_SIZE];
+    int* h_matrixB = new int[MATRIX_SIZE * MATRIX_SIZE];
+    int* h_matrixC = new int[MATRIX_SIZE * MATRIX_SIZE];
+
+    // Initialize vectors and matrices with random values
+    for (int i = 0; i < VECTOR_SIZE; ++i) {
+        h_a[i] = rand() % 100;
+        h_b[i] = rand() % 100;
+    }
+
+    for (int i = 0; i < MATRIX_SIZE * MATRIX_SIZE; ++i) {
+        h_matrixA[i] = rand() % 100;
+        h_matrixB[i] = rand() % 100;
+    }
+
+    // Allocate memory for vectors and matrices on the device
+    int* d_a, * d_b, * d_c;
+    cudaMalloc(&d_a, VECTOR_SIZE * sizeof(int));
+    cudaMalloc(&d_b, VECTOR_SIZE * sizeof(int));
+    cudaMalloc(&d_c, VECTOR_SIZE * sizeof(int));
+
+    int* d_matrixA, * d_matrixB, * d_matrixC;
+    cudaMalloc(&d_matrixA, MATRIX_SIZE * MATRIX_SIZE * sizeof(int));
+    cudaMalloc(&d_matrixB, MATRIX_SIZE * MATRIX_SIZE * sizeof(int));
+    cudaMalloc(&d_matrixC, MATRIX_SIZE * MATRIX_SIZE * sizeof(int));
+
+    // Copy vectors and matrices from host to device
+    cudaMemcpy(d_a, h_a, VECTOR_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_b, h_b, VECTOR_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+
+    cudaMemcpy(d_matrixA, h_matrixA, MATRIX_SIZE * MATRIX_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_matrixB, h_matrixB, MATRIX_SIZE * MATRIX_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+
+    // Configure the execution parameters
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (VECTOR_SIZE + threadsPerBlock - 1) / threadsPerBlock;
+
+    // Launch the vector addition kernel
+    vectorAddition<<<blocksPerGrid, threadsPerBlock>>>(d_a, d_b, d_c, VECTOR_SIZE);
+
+    // Copy the result from device to host
+   

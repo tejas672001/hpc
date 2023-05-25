@@ -1,0 +1,60 @@
+Application 
+
+#include <iostream>
+#include <vector>
+#include <cuda_runtime.h>
+
+// CUDA kernel for parallel processing
+__global__ void processData(const float* input, float* output, int size) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < size) {
+        // Perform AI/ML computations
+        // Modify this section according to your specific AI/ML algorithm
+        float result = input[tid] * 2.0f;
+
+        // Store the result
+        output[tid] = result;
+    }
+}
+
+int main() {
+    const int DATA_SIZE = 1000000;
+
+    // Allocate memory for input and output data on the host
+    std::vector<float> h_input(DATA_SIZE);
+    std::vector<float> h_output(DATA_SIZE);
+
+    // Initialize input data (example: random initialization)
+    for (int i = 0; i < DATA_SIZE; ++i) {
+        h_input[i] = static_cast<float>(rand()) / RAND_MAX;
+    }
+
+    // Allocate memory for input and output data on the device
+    float* d_input, * d_output;
+    cudaMalloc(&d_input, DATA_SIZE * sizeof(float));
+    cudaMalloc(&d_output, DATA_SIZE * sizeof(float));
+
+    // Copy input data from host to device
+    cudaMemcpy(d_input, h_input.data(), DATA_SIZE * sizeof(float), cudaMemcpyHostToDevice);
+
+    // Configure the execution parameters
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (DATA_SIZE + threadsPerBlock - 1) / threadsPerBlock;
+
+    // Launch the CUDA kernel for parallel processing
+    processData<<<blocksPerGrid, threadsPerBlock>>>(d_input, d_output, DATA_SIZE);
+
+    // Copy the result from device to host
+    cudaMemcpy(h_output.data(), d_output, DATA_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Display the output data (example: print first 10 elements)
+    for (int i = 0; i < 10; ++i) {
+        std::cout << "Output[" << i << "]: " << h_output[i] << std::endl;
+    }
+
+    // Free device memory
+    cudaFree(d_input);
+    cudaFree(d_output);
+
+    return 0;
+}

@@ -1,0 +1,16 @@
+command 
+
+sudo apt-get install libomp-dev
+g++ -fopenmp parallel_reduction.cpp -o parallel_reduction
+./parallel_reduction
+
+
+dpkg -l | grep libomp-dev
+gcc -fopenmp --version
+
+
+----------------------------------------------------------------------------------------------
+
+CD desktop
+G++ filename.cpp
+./a.out
